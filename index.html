@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>Checklist Mensal</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: #0f0f0f;
+            color: #fff;
+            margin: 0;
+            padding: 0;
+            touch-action: manipulation;
+            overflow-x: hidden;
+        }
+        .header {
+            text-align: center;
+            padding: 20px;
+            font-size: 24px;
+            font-weight: bold;
+            background-color: #111;
+        }
+        .tabs {
+            display: flex;
+            overflow-x: auto;
+            background-color: #111;
+            padding: 10px 0;
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+        }
+        .tabs::-webkit-scrollbar {
+            display: none;
+        }
+        .tab {
+            flex-shrink: 0;
+            padding: 10px 15px;
+            margin: 0 5px;
+            background-color: #333;
+            color: #fff;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        .tab.active {
+            background-color: #007AFF;
+        }
+        .container {
+            position: relative;
+            overflow-x: auto;
+            overflow-y: auto;
+            height: calc(100vh - 140px);
+        }
+        table {
+            border-collapse: collapse;
+            width: auto;
+            min-width: 100%;
+        }
+        th, td {
+            border: 1px solid #333;
+            text-align: center;
+            vertical-align: middle;
+        }
+        .task-col {
+            position: sticky;
+            left: 0;
+            background-color: #1a1a1a;
+            width: 160px;
+            font-size: 13px;
+            color: #ccc;
+            padding: 8px;
+            text-overflow: ellipsis;
+            overflow: hidden;
+            white-space: nowrap;
+        }
+        .day-header {
+            position: sticky;
+            top: 0;
+            background-color: #111;
+            height: 40px;
+            font-weight: bold;
+        }
+        .day-header.sunday {
+            color: #ff0000;
+        }
+        .day-header.saturday {
+            color: #ff8c00;
+        }
+        .checkbox-cell {
+            width: 38px;
+            height: 36px;
+            background-color: #1e1e1e;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid #333;
+        }
+        .checkbox-cell.checked {
+            background-color: #34C759;
+            color: #fff;
+        }
+        .checkbox-cell.checked::before {
+            content: '✓';
+            font-size: 18px;
+        }
+        tr:nth-child(even) {
+            background-color: #1a1a1a;
+        }
+        .separator {
+            border-bottom: 2px solid #333;
+        }
+        .editable {
+            background-color: #1e1e1e;
+            border: none;
+            color: #ccc;
+            font-size: 13px;
+            width: 100%;
+            padding: 8px;
+            text-overflow: ellipsis;
+        }
+        .editable::placeholder {
+            color: #666;
+        }
+        .footer {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background-color: #111;
+            padding: 10px;
+            text-align: center;
+            font-size: 14px;
+        }
+        .today-btn {
+            position: fixed;
+            bottom: 80px;
+            right: 20px;
+            background-color: #007AFF;
+            color: #fff;
+            border: none;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            font-size: 18px;
+            cursor: pointer;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.5);
+        }
+    </style>
+</head>
+<body>
+    <div class="header" id="month-header">Abril 2026</div>
+    <div class="tabs" id="tabs"></div>
+    <div class="container">
+        <table id="checklist-table"></table>
+    </div>
+    <div class="footer" id="footer">Tarefas marcadas: 0 / 93</div>
+    <button class="today-btn" id="today-btn">📅</button>
+    <script>
+        const tasks = [
+            'Café', 'Ovo', 'Limão', 'Banana', 'Vinho/Uva', 'Outras Frutas', 'Aveia/Linhaça', 'Alho', 'Gengibre', 'Verdura',
+            'Canela', 'Maca/Tribulus', 'Cúrcuma', 'Castanha do Pará', 'Nozes', 'Amendoa', 'Beber água', 'Água Alcalina', 'Suco',
+            'Valsartana', 'Desvenla', 'Lugol', 'Propólis', 'Vitamina D3', 'Zinco', 'Magnésio', 'K2', 'Fish Oil', 'Côco (óleo/água)',
+            'Toalete', 'Respiração', 'Alongamento', 'Caminhada', 'Flexão', 'Abdominal', 'Academia', 'Sol/Suor', 'Arrumações',
+            'Varrer', 'Plantas', 'Baterias', 'Trigo', 'Refrigerante', 'Joff', 'Açucar', 'Oração', 'Liturgia Diária', 'Homilia',
+            'Meditação', 'Terço', 'Santo do dia', 'O Globo', 'Folha', 'Lit. Imaginação', 'Fluminense', 'Google News', 'Instagram',
+            'Facebook', 'Twitter TR', 'Twitter TRFlu', 'N. Iguaçu', 'Conceito', 'Mitra', 'Bolsa', 'Outro$', 'Agenda', 'Calendar',
+            'Histórico', 'Arq. Morto', 'Análises', 'Relatórios', 'Oss/Pend.', 'Contas', 'NFs', 'Backups', 'Inadimpl.', 'Vazios',
+            'Jurisprud.', 'IA', 'Merc. Imob.', 'Bíblia', 'Logica', 'Trivium', 'Suma', 'Carpeaux', 'Catecismo', 'Princípios',
+            'Inglês', 'Latim', 'Adler', 'Ensino Crianças', '', ''
+        ];
+        const months = [];
+        for (let year = 2026; year <= 2030; year++) {
+            for (let month = (year === 2026 ? 3 : 0); month < 12; month++) {
+                if (year === 2030 && month > 11) break;
+                months.push({ year, month: month + 1, name: new Date(year, month).toLocaleString('pt-BR', { month: 'long' }) + ' ' + year });
+            }
+        }
+        let currentMonthIndex = 0; // Abril 2026
+        let currentData = {};
+        function loadData(monthIndex) {
+            const key = `checklist_${months[monthIndex].year}_${String(months[monthIndex].month).padStart(2, '0')}`;
+            const stored = localStorage.getItem(key);
+            currentData = stored ? JSON.parse(stored) : { checks: Array(tasks.length).fill().map(() => Array(getDaysInMonth(months[monthIndex].year, months[monthIndex].month)).fill(false)), customTasks: ['', ''] };
+            tasks[91] = currentData.customTasks[0];
+            tasks[92] = currentData.customTasks[1];
+        }
+        function saveData(monthIndex) {
+            const key = `checklist_${months[monthIndex].year}_${String(months[monthIndex].month).padStart(2, '0')}`;
+            currentData.customTasks = [tasks[91], tasks[92]];
+            localStorage.setItem(key, JSON.stringify(currentData));
+        }
+        function getDaysInMonth(year, month) {
+            return new Date(year, month, 0).getDate();
+        }
+        function getDayOfWeek(year, month, day) {
+            return new Date(year, month - 1, day).getDay();
+        }
+        function renderTabs() {
+            const tabsEl = document.getElementById('tabs');
+            tabsEl.innerHTML = '';
+            months.forEach((m, i) => {
+                const tab = document.createElement('div');
+                tab.className = 'tab' + (i === currentMonthIndex ? ' active' : '');
+                tab.textContent = m.name;
+                tab.onclick = () => switchMonth(i);
+                tabsEl.appendChild(tab);
+            });
+        }
+        function switchMonth(index) {
+            saveData(currentMonthIndex);
+            currentMonthIndex = index;
+            loadData(currentMonthIndex);
+            renderTabs();
+            renderTable();
+            document.getElementById('month-header').textContent = months[currentMonthIndex].name;
+        }
+        function renderTable() {
+            const tableEl = document.getElementById('checklist-table');
+            tableEl.innerHTML = '';
+            const days = getDaysInMonth(months[currentMonthIndex].year, months[currentMonthIndex].month);
+            // Header row
+            const headerRow = document.createElement('tr');
+            headerRow.innerHTML = '<th class="task-col">Tarefa</th>';
+            for (let d = 1; d <= days; d++) {
+                const dayOfWeek = getDayOfWeek(months[currentMonthIndex].year, months[currentMonthIndex].month, d);
+                const th = document.createElement('th');
+                th.className = 'day-header' + (dayOfWeek === 0 ? ' sunday' : dayOfWeek === 6 ? ' saturday' : '');
+                th.textContent = d;
+                headerRow.appendChild(th);
+            }
+            tableEl.appendChild(headerRow);
+            // Task rows
+            tasks.forEach((task, tIndex) => {
+                const row = document.createElement('tr');
+                if ((tIndex + 1) % 10 === 0) row.classList.add('separator');
+                const taskCell = document.createElement('td');
+                taskCell.className = 'task-col';
+                if (tIndex >= 91) {
+                    const input = document.createElement('input');
+                    input.className = 'editable';
+                    input.placeholder = 'Nova tarefa...';
+                    input.value = task;
+                    input.oninput = () => {
+                        tasks[tIndex] = input.value;
+                        saveData(currentMonthIndex);
+                    };
+                    taskCell.appendChild(input);
+                } else {
+                    taskCell.textContent = task;
+                }
+                row.appendChild(taskCell);
+                for (let d = 0; d < days; d++) {
+                    const cell = document.createElement('td');
+                    cell.className = 'checkbox-cell' + (currentData.checks[tIndex][d] ? ' checked' : '');
+                    cell.onclick = () => {
+                        currentData.checks[tIndex][d] = !currentData.checks[tIndex][d];
+                        cell.classList.toggle('checked');
+                        updateCount();
+                        saveData(currentMonthIndex);
+                    };
+                    row.appendChild(cell);
+                }
+                tableEl.appendChild(row);
+            });
+            updateCount();
+        }
+        function updateCount() {
+            let count = 0;
+            currentData.checks.forEach(taskChecks => {
+                count += taskChecks.filter(c => c).length;
+            });
+            document.getElementById('footer').textContent = `Tarefas marcadas: ${count} / ${93 * getDaysInMonth(months[currentMonthIndex].year, months[currentMonthIndex].month)}`;
+        }
+        function goToToday() {
+            const today = new Date(2026, 2, 17); // Hoje é 17/03/2026
+            const todayMonth = today.getMonth() + 1;
+            const todayYear = today.getFullYear();
+            const index = months.findIndex(m => m.year === todayYear && m.month === todayMonth);
+            if (index !== -1) switchMonth(index);
+        }
+        document.getElementById('today-btn').onclick = goToToday;
+        loadData(currentMonthIndex);
+        renderTabs();
+        renderTable();
+    </script>
+</body>
+</html>
